@@ -379,7 +379,7 @@ let reset = () => {
   playGround2.position.z = -110;
 };
 
-const controls = new OrbitControls(camera, renderer.domElement);
+// const controls = new OrbitControls(camera, renderer.domElement);
 let clock = new THREE.Clock();
 let prevTime = 0;
 let animate = () => {
@@ -408,7 +408,7 @@ let animate = () => {
   updateBoxes();
   checkCollision();
 
-  controls.update();
+  // controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 };
