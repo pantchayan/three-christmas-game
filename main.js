@@ -34,7 +34,7 @@ window.addEventListener("resize", () => {
 
 // Scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#ADD8E6");
+scene.background = new THREE.Color("#050F26");
 
 let playgroundLength = 110;
 let playgroundBreadth = 20;
@@ -42,7 +42,7 @@ let playgroundBreadth = 20;
 let makeSnow = () => {
   const snow = new THREE.Mesh(
     new THREE.PlaneGeometry(
-      playgroundBreadth + 10,
+      playgroundBreadth + 100,
       playgroundLength + 10,
       30,
       30
@@ -83,25 +83,22 @@ let makeTrunkBox = (trunk) => {
 };
 
 let makeOneTree = () => {
-  let leavesMaterial = new THREE.MeshStandardMaterial({
-    color: "green",
-    flatShading: true,
-  });
-
+  let colors = ["#008000", "#228B22", "#006400"];
   let tree = new THREE.Group();
   let r = 1;
   for (let i = 0; i < 3; i++) {
-    let leavesGeometry = new THREE.Mesh(
+    let color = colors[i];
+    let leaves = new THREE.Mesh(
       new THREE.ConeGeometry(r, 1, 32),
-      leavesMaterial
+      new THREE.MeshStandardMaterial({ color: color })
     );
-    leavesGeometry.position.y = i * 0.5;
-    tree.add(leavesGeometry);
+    leaves.position.y = i * 0.5;
+    tree.add(leaves);
     r -= 0.25;
   }
   let trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.2, 0.2, 1, 10),
-    new THREE.MeshBasicMaterial({ color: "black" })
+    new THREE.MeshBasicMaterial({ color: "#3A271A" })
   );
   trunk.position.y -= 0.5;
   tree.add(trunk);
@@ -135,21 +132,106 @@ let makeTrees = (treeNum) => {
   return trees;
 };
 
+let makeClouds = () => {
+  let clouds = new THREE.Group();
+  let cloudPositions = [
+    { x: -15, y: 10, z: 0 },
+    { x: -15, y: 10, z: 15 },
+    { x: 5, y: 8, z: 40 },
+    { x: 15, y: 10, z: 0 },
+  ];
+  let cubeMaterial = new THREE.MeshBasicMaterial({ color: "white" });
+  let cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+  for (let i = 0; i < 4; i++) {
+    let cloud = new THREE.Group();
+    for (let j = 0; j < 8; j++) {
+      let cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+      cubeMesh.material.color =
+        j % 2 == 0 ? new THREE.Color("black") : new THREE.Color("white");
+      cubeMesh.rotation.x = (Math.random() * Math.PI) / 2;
+      cubeMesh.rotation.y = (Math.random() * Math.PI) / 2;
+      cubeMesh.rotation.z = (Math.random() * Math.PI) / 2;
+      cubeMesh.position.x = j - Math.random() * 0.1;
+      let scaleRandom = Math.random();
+      cubeMesh.scale.set(scaleRandom, scaleRandom, scaleRandom);
+      cloud.add(cubeMesh);
+    }
+    cloud.position.set(
+      cloudPositions[i].x,
+      cloudPositions[i].y,
+      cloudPositions[i].z
+    );
+    // cloud.position.x = Math.sin(i * Math.PI)
+    clouds.add(cloud);
+  }
+
+  return clouds;
+};
+
+let makeParticles = () => {
+  // PARTICLES
+
+  let bgParticlesGeometry = new THREE.BufferGeometry();
+  let count = 1500;
+
+  let positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count * 3; i++) {
+    if (i % 3 == 0) {
+      // x
+      positions[i] = (Math.random() - 0.5) * 50;
+    }
+    if (i % 3 == 1) {
+      // y
+      positions[i] = (Math.random() - 0.5) * 50;
+    }
+    if (i % 3 == 2) {
+      // z
+      positions[i] = (Math.random() - 0.5) * 50;
+    }
+  }
+
+  bgParticlesGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions, 3)
+  );
+
+  let bgParticlesMaterial = new THREE.PointsMaterial();
+  bgParticlesMaterial.size = 0.05;
+  bgParticlesMaterial.sizeAttenuation = true;
+  bgParticlesMaterial.transparent = true;
+  // bgParticlesMaterial.alphaMap = ;
+  bgParticlesMaterial.depthWrite = false;
+  bgParticlesMaterial.color = new THREE.Color("white");
+
+  let bgParticles = new THREE.Points(bgParticlesGeometry, bgParticlesMaterial);
+
+  return bgParticles;
+};
+
+let particles = makeParticles();
+particles.position.z = 51;
+scene.add(particles);
+
 let treeNum = 15;
 let snow = makeSnow();
+let clouds1 = makeClouds();
 let trees1 = makeTrees(treeNum);
 
 let playGround1 = new THREE.Group();
 playGround1.add(trees1);
 playGround1.add(snow);
+playGround1.add(clouds1);
 scene.add(playGround1);
 
 let playGround2 = new THREE.Group();
 
 snow = makeSnow();
+let clouds2 = makeClouds();
 let trees2 = makeTrees(treeNum);
 playGround2.add(trees2);
 playGround2.add(snow);
+playGround2.add(clouds2);
 playGround2.position.z = -110;
 scene.add(playGround2);
 
@@ -192,15 +274,21 @@ camera.position.y = 0.2;
 
 // Lights
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-
 directionalLight.position.z = 7;
 directionalLight.position.y = 4;
-scene.add(directionalLight);
+// scene.add(directionalLight);
+
+const pointLight = new THREE.PointLight(new THREE.Color("white"), 0.5);
+pointLight.position.z = 48;
+scene.add(pointLight);
+const pointLight2 = new THREE.PointLight(new THREE.Color("white"), 1.5);
+pointLight2.position.z = 50;
+pointLight2.position.y = -0.5;
+scene.add(pointLight2);
 
 const ambientLight = new THREE.AmbientLight(0xdddddd, 0.2);
 scene.add(ambientLight);
 
-// const controls = new OrbitControls(camera, renderer.domElement);
 renderer.render(scene, camera);
 
 // const axesHelper = new THREE.AxesHelper(5);
@@ -242,14 +330,12 @@ let handlePlayer = () => {
       player.position.y += bounceValue;
     }
     bounceValue -= gravity;
+  } else {
+    //   bounceValue = Math.random() * 0.04 + 0.005;
+    //   // player.position.y += bounceValue;
+    //   bounceValue -= gravity;
+    // player.position.y = Math.abs(Math.sin(clock.getElapsedTime()))/4 - 0.4
   }
-  else{
-  //   bounceValue = Math.random() * 0.04 + 0.005;
-  //   // player.position.y += bounceValue;
-  //   bounceValue -= gravity;
-  // player.position.y = Math.abs(Math.sin(clock.getElapsedTime()))/4 - 0.4
-  }
-
 };
 
 let updateBoxes = () => {
@@ -274,7 +360,7 @@ let checkCollision = () => {
   for (let i = 0; i < 30; i++) {
     if (playerBox.intersectsBox(trunkBoxes[i])) {
       console.log("COLLISION");
-      alert("GAME OVER : " + Math.ceil(currScore));
+      alert("GAME OVER!  Score : " + Math.ceil(currScore));
 
       currScore = 0;
       reset();
@@ -293,6 +379,7 @@ let reset = () => {
   playGround2.position.z = -110;
 };
 
+const controls = new OrbitControls(camera, renderer.domElement);
 let clock = new THREE.Clock();
 let prevTime = 0;
 let animate = () => {
@@ -303,39 +390,25 @@ let animate = () => {
   if (sleighModel) {
     sleighModel.rotation.y = -Math.PI / 2;
     sleighModel.position.x = 5;
-
-    // const playerBox = new THREE.Box3();
-    // const playerBoxhelper = new THREE.Box3Helper(playerBox, 0xffff00);
-
-    // // ensure the bounding box is computed for its geometry
-    // // this should be done only once (assuming static geometries)
-    // player.geometry.computeBoundingBox();
-
-    // console.log(sleighModel)
-    // // ...
-
-    // // in the animation loop, compute the current bounding box with the world matrix
-    // playerBox
-    //   .copy(player.geometry.boundingBox)
-    //   .applyMatrix4(sleighModel.matrixWorld);
-
-    // // scene.add(box);
-    // scene.add(playerBoxhelper);
     scene.add(sleighModel);
     sleighModel.position.x = player.position.x;
-    sleighModel.position.y = player.position.y - 0.2;
+    sleighModel.position.y = player.position.y - 0.1;
     sleighModel.position.z = player.position.z;
+    sleighModel.rotation.x = Math.sin(prevTime) / 5;
   }
 
   regenerateGround();
   handlePlayer();
   playGround1.position.z += deltaTime * levelSpeed;
   playGround2.position.z += deltaTime * levelSpeed;
+
+  // particles.rotation.z += 0.005;
+  particles.rotation.x -= 0.005;
   currScore += 0.05;
   updateBoxes();
   checkCollision();
 
-  // controls.update();
+  controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 };
