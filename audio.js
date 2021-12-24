@@ -1,8 +1,8 @@
 document.getElementById("unmute").addEventListener("click", (e) => {
-  console.log("Player wanna unmute");
+//   console.log("Player wanna unmute");
   document.querySelectorAll("audio").forEach((item) => {
-    console.log();
-    item.volume = 1;
+      item.volume = 1;
+      if(item.id ==='bgAudio') item.volume = 0.3;
   });
 
   document.getElementById("unmute").classList.add('hide')
@@ -10,7 +10,7 @@ document.getElementById("unmute").addEventListener("click", (e) => {
   document.getElementById("mute").classList.remove('hide')
 });
 document.getElementById("mute").addEventListener("click", (e) => {
-  console.log("Player wanna mute");
+//   console.log("Player wanna mute");
   document.querySelectorAll("audio").forEach((item) => {
     console.log();
     item.volume = 0;

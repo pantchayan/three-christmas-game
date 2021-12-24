@@ -14,12 +14,16 @@ let gravity = 0.005;
 let trunkBoxes = [];
 let currScore = 0;
 let levelSpeed = 20;
+let levelNum = 1;
 let sleighModel;
+let rewardNum = 15;
+let rewardBoxes = [];
 let startCheckingCollisions = false;
 
 const sizes = { height: window.innerHeight, width: window.innerWidth };
 
 const bgAudio = document.getElementById("bgAudio");
+bgAudio.volume = 0.3;
 const crashAudio = document.getElementById("crashAudio");
 const jumpAudio = document.getElementById("jumpAudio");
 const bonusAudio = document.getElementById("bonusAudio");
@@ -91,6 +95,24 @@ let makeTrunkBox = (trunk) => {
   trunkBoxes.push(box);
 };
 
+let makeRewardBox = (reward) => {
+  const box = new THREE.Box3();
+  const helper = new THREE.Box3Helper(box, 0xffff00);
+
+  // ensure the bounding box is computed for its geometry
+  // this should be done only once (assuming static geometries)
+  reward.geometry.computeBoundingBox();
+
+  // ...
+
+  // in the animation loop, compute the current bounding box with the world matrix
+  box.copy(reward.geometry.boundingBox).applyMatrix4(reward.matrixWorld);
+  // console.log("HERE");
+  // scene.add(box);
+  // scene.add(helper);
+  rewardBoxes.push(box);
+};
+
 let makeOneTree = () => {
   let colors = ["#008000", "#228B22", "#006400"];
   let tree = new THREE.Group();
@@ -119,7 +141,6 @@ let makeOneTree = () => {
 
 let makeTrees = (treeNum) => {
   let trees = new THREE.Group();
-  let array = snow.geometry.attributes.position.array;
   for (let i = 0; i < treeNum; i++) {
     let tree = makeOneTree();
     tree.position.set(
@@ -139,6 +160,31 @@ let makeTrees = (treeNum) => {
     trees.add(tree);
   }
   return trees;
+};
+
+let makeRewards = (rewardNum) => {
+  let colors = ["#F47C7C", "#F7F48B", "#A1DE93", "#70A1D7", "#C56E90", "#9D8CB8"];
+  let rewards = new THREE.Group();
+  for (let i = 0; i < rewardNum; i++) {
+    let reward = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.2, 0),
+      new THREE.MeshStandardMaterial({ color: colors[i % colors.length]})
+    );
+    makeRewardBox(reward);
+    reward.position.set(
+      ((Math.random() * playgroundBreadth - 15) / 2) * (i % 2 == 0 ? -1 : 1),
+      -0.5,
+      ((Math.random() * playgroundLength) / 2) *
+        (Math.floor(Math.random() * 10) % 2 == 0 ? 1 : -1)
+    );
+
+    reward.rotation.set((Math.random() / 3) * (i % 2 == 0 ? -1 : 1), 0, 0);
+    let scaleVal = Math.random();
+    scaleVal = scaleVal < 0.2 ? 1 : scaleVal;
+    reward.scale.set(scaleVal, scaleVal, scaleVal);
+    rewards.add(reward);
+  }
+  return rewards;
 };
 
 let makeClouds = () => {
@@ -277,11 +323,15 @@ let treeNum = 15;
 let snow = makeSnow();
 let clouds1 = makeClouds();
 let trees1 = makeTrees(treeNum);
+let rewards1 = makeRewards(rewardNum);
 
 let playGround1 = new THREE.Group();
 playGround1.add(trees1);
 playGround1.add(snow);
 playGround1.add(clouds1);
+
+playGround1.add(rewards1);
+
 scene.add(playGround1);
 
 let playGround2 = new THREE.Group();
@@ -289,11 +339,26 @@ let playGround2 = new THREE.Group();
 snow = makeSnow();
 let clouds2 = makeClouds();
 let trees2 = makeTrees(treeNum);
+let rewards2 = makeRewards(rewardNum);
 playGround2.add(trees2);
 playGround2.add(snow);
 playGround2.add(clouds2);
+playGround2.add(rewards2);
 playGround2.position.z = -110;
 scene.add(playGround2);
+
+let playGround3 = new THREE.Group();
+
+snow = makeSnow();
+let clouds3 = makeClouds();
+let trees3 = makeTrees(treeNum);
+let rewards3 = makeRewards(rewardNum);
+playGround3.add(trees3);
+playGround3.add(snow);
+playGround3.add(clouds3);
+playGround3.add(rewards3);
+playGround3.position.z = -220;
+scene.add(playGround3);
 
 let makePlayer = () => {
   let cube = new THREE.Mesh(
@@ -354,11 +419,32 @@ renderer.render(scene, camera);
 // const axesHelper = new THREE.AxesHelper(5);
 // scene.add(axesHelper);
 
+let randomizeTrees = (playground) => {
+  let treeArray = playground.children[0].children;
+  for (let i = 0; i < treeArray.length; i++) {
+    console.log();
+    let tree = treeArray[i];
+    tree.position.set(
+      ((Math.random() * playgroundBreadth) / 2) * (i % 2 == 0 ? -1 : 1),
+      0,
+      ((Math.random() * playgroundLength) / 2) *
+        (Math.floor(Math.random() * 10) % 2 == 0 ? 1 : -1)
+    );
+
+    tree.rotation.set((Math.random() / 3) * (i % 2 == 0 ? -1 : 1), 0, 0);
+  }
+};
+
 let regenerateGround = () => {
   if (playGround1.position.z > playgroundLength) {
-    playGround1.position.z = -100;
+    playGround1.position.z = -200;
+    randomizeTrees(playGround1);
   } else if (playGround2.position.z > playgroundLength) {
-    playGround2.position.z = -100;
+    playGround2.position.z = -200;
+    randomizeTrees(playGround2);
+  } else if (playGround3.position.z > playgroundLength) {
+    playGround3.position.z = -200;
+    randomizeTrees(playGround3);
   }
 };
 
@@ -418,23 +504,44 @@ let updateMaxScore = () => {
 let updateBoxes = () => {
   playerBox.copy(player.geometry.boundingBox).applyMatrix4(player.matrixWorld);
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < trunkBoxes.length; i++) {
     console.log();
     if (i < 15) {
       trunkBoxes[i]
         .copy(trees1.children[i].children[3].geometry.boundingBox)
         .applyMatrix4(trees1.children[i].children[3].matrixWorld);
-    } else {
+    } else if (i < 30) {
       trunkBoxes[i]
         .copy(trees2.children[i - 15].children[3].geometry.boundingBox)
         .applyMatrix4(trees2.children[i - 15].children[3].matrixWorld);
+    } else {
+      trunkBoxes[i]
+        .copy(trees2.children[i - 30].children[3].geometry.boundingBox)
+        .applyMatrix4(trees2.children[i - 30].children[3].matrixWorld);
+    }
+  }
+
+  for (let i = 0; i < rewardBoxes.length; i++) {
+    console.log();
+    if (i < 15) {
+      rewardBoxes[i]
+        .copy(rewards1.children[i].geometry.boundingBox)
+        .applyMatrix4(rewards1.children[i].matrixWorld);
+    } else if (i < 30) {
+      rewardBoxes[i]
+        .copy(rewards2.children[i - 15].geometry.boundingBox)
+        .applyMatrix4(rewards2.children[i - 15].matrixWorld);
+    } else {
+      rewardBoxes[i]
+        .copy(rewards3.children[i - 30].geometry.boundingBox)
+        .applyMatrix4(rewards3.children[i - 30].matrixWorld);
     }
   }
   // box.copy(trunk.geometry.boundingBox).applyMatrix4(trunk.matrixWorld);
 };
 
 let checkCollision = () => {
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < trunkBoxes.length; i++) {
     if (playerBox.intersectsBox(trunkBoxes[i])) {
       console.log("COLLISION");
       bgAudio.load();
@@ -445,6 +552,17 @@ let checkCollision = () => {
 
       currScore = 0;
       reset();
+    }
+  }
+
+  for (let i = 0; i < rewardBoxes.length; i++) {
+    if (playerBox.intersectsBox(rewardBoxes[i])) {
+      console.log("PICKED REWARD + 5");
+      currScore += 5;
+      // bonusAudio.load();
+      bonusAudio.currentTime = 0; 
+      bonusAudio.play();
+      return;
     }
   }
 };
@@ -460,14 +578,17 @@ let reset = () => {
   playerTargetX = 0;
   playerJump = false;
   bounceValue = 0.1;
+  levelSpeed = 20;
+  levelNum = 1;
   player.position.z = 48;
   player.position.x = 0;
   player.position.y = -0.5;
   playGround1.position.z = 0;
   playGround2.position.z = -110;
+  playGround3.position.z = -220;
 };
 
-const controls = new OrbitControls(camera, renderer.domElement);
+// const controls = new OrbitControls(camera, renderer.domElement);
 let clock = new THREE.Clock();
 let prevTime = 0;
 let animationRequest;
@@ -490,6 +611,7 @@ let animate = () => {
   handlePlayer();
   playGround1.position.z += deltaTime * levelSpeed;
   playGround2.position.z += deltaTime * levelSpeed;
+  playGround3.position.z += deltaTime * levelSpeed;
 
   // particles.rotation.z += 0.005;
   particles.rotation.x -= 0.005;
@@ -502,7 +624,7 @@ let animate = () => {
     ).innerHTML = `Curr score : <span> ${Math.ceil(currScore)} </span>`;
   }
 
-  controls.update();
+  // controls.update();
   renderer.render(scene, camera);
   animationRequest = requestAnimationFrame(animate);
 };
@@ -539,15 +661,9 @@ player.geometry.computeBoundingBox();
 // in the animation loop, compute the current bounding box with the world matrix
 playerBox.copy(player.geometry.boundingBox).applyMatrix4(player.matrixWorld);
 
-// scene.add(box);
 // scene.add(playerBoxhelper);
 
 document.onkeydown = handleKeyDown;
-// animate();
-
-// setTimeout(() => {
-//   bgAudio.play()
-// }, 1000)
 
 bgAudio.loop = true;
 
@@ -558,8 +674,24 @@ startButton.addEventListener("click", (e) => {
   setTimeout(() => {
     startCheckingCollisions = true;
   }, 2000);
+
+  document.getElementById(
+    "level-container"
+  ).innerHTML = `<h1> Level ${levelNum}</h1>`;
 });
+
+setInterval(() => {
+  if (startCheckingCollisions) {
+    console.log("NEXT LEVEL");
+    levelSpeed += 5;
+    levelNum += 1;
+    document.getElementById(
+      "level-container"
+    ).innerHTML = `<h1> Level ${levelNum}</h1>`;
+  }
+}, 20 * 1000);
 
 updateMaxScore();
 animate();
+
 // scene.fog = new THREE.Fog(new THREE.Color('grey'), 0.00, 70);

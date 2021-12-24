@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sleigh Runner | Three.js</title>
     <link rel="icon" href="./assets/images/tree-icon.png" type="image/x-icon" />
-   
+
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
         integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous" />
 
@@ -77,18 +77,29 @@
         cursor: pointer;
     }
 
-    
+
     .hide {
         display: none;
     }
 
-    #score-container{
+    #score-container {
         z-index: 10;
         position: absolute;
         bottom: 20px;
         left: 10px;
         font-family: 'Chonburi';
         font-size: 30px;
+        font-weight: 700;
+    }
+
+    #level-container {
+        z-index: 10;
+        position: absolute;
+        top: 20px;
+        right: 50px;
+        color: aliceblue;
+        font-family: 'Chonburi';
+        font-size: 20px;
         font-weight: 700;
     }
 </style>
@@ -101,7 +112,7 @@
             <i class="fas fa-volume-up" id="mute"></i>
             <i class="fas fa-volume-mute hide" id="unmute"></i>
         </div>
-        <audio id="bgAudio" autoplay>
+        <audio id="bgAudio">
             <source src="./assets/audios/bg-christmas-audio.mp3" type="audio/mpeg">
         </audio>
         <audio id="crashAudio">
@@ -117,7 +128,8 @@
         <div class="menu-container">
             <h1>Welcome to Sleigh Runner!</h1>
             <h2>Click Here To Start</h2>
-            <h3>Use Arrow keys to go Left< , Right> or Jump^ over the Trees</h3>
+            <h3>Use Arrow keys to go Left< , Right> or Jump^ over the Trunks <br> /////////////////////////Collect
+                    Rewards for Extra Points\\\\\\\\\\\\\\\\\\\\\\\\\\\</h3>
         </div>
 
         <div id="score-container">
@@ -127,6 +139,10 @@
             <div class="score" id="curr-score">
                 Curr score : <span> 0 </span>
             </div>
+        </div>
+
+        <div id="level-container">
+            <h1>Level -</h1>
         </div>
     </main>
 
@@ -143,6 +159,17 @@
 
     <script>
         (function () { var script = document.createElement('script'); script.onload = function () { var stats = new Stats(); document.body.appendChild(stats.dom); requestAnimationFrame(function loop() { stats.update(); requestAnimationFrame(loop) }); }; script.src = '//mrdoob.github.io/stats.js/build/stats.min.js'; document.head.appendChild(script); })()
+    </script>
+
+    <script>
+        document.addEventListener("visibilitychange", function () {
+            if (document.hidden) {
+                console.log("Browser tab is hidden")
+            } else {
+                console.log("Browser tab is visible")
+                location.reload();
+            }
+        });
     </script>
 
     <script src="main.js" type="module" defer></script>
