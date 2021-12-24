@@ -163,12 +163,19 @@ let makeTrees = (treeNum) => {
 };
 
 let makeRewards = (rewardNum) => {
-  let colors = ["#F47C7C", "#F7F48B", "#A1DE93", "#70A1D7", "#C56E90", "#9D8CB8"];
+  let colors = [
+    "#F47C7C",
+    "#F7F48B",
+    "#A1DE93",
+    "#70A1D7",
+    "#C56E90",
+    "#9D8CB8",
+  ];
   let rewards = new THREE.Group();
   for (let i = 0; i < rewardNum; i++) {
     let reward = new THREE.Mesh(
       new THREE.IcosahedronGeometry(0.2, 0),
-      new THREE.MeshStandardMaterial({ color: colors[i % colors.length]})
+      new THREE.MeshStandardMaterial({ color: colors[i % colors.length] })
     );
     makeRewardBox(reward);
     reward.position.set(
@@ -540,6 +547,17 @@ let updateBoxes = () => {
   // box.copy(trunk.geometry.boundingBox).applyMatrix4(trunk.matrixWorld);
 };
 
+let animateRewards = (playground) => {
+  let rewardsArray = playground.children[3].children;
+  for (let i = 0; i < rewardsArray.length; i++) {
+    rewardsArray[i].rotation.y = prevTime;
+    rewardsArray[i].position.y = -0.6 + Math.abs(Math.sin(prevTime + i) / 3);
+    if (levelNum >= 3)
+      rewardsArray[i].position.x +=
+        i % 2 == 0 ? Math.sin(prevTime) / 50 : Math.cos(prevTime) / 50;
+  }
+};
+
 let checkCollision = () => {
   for (let i = 0; i < trunkBoxes.length; i++) {
     if (playerBox.intersectsBox(trunkBoxes[i])) {
@@ -557,10 +575,10 @@ let checkCollision = () => {
 
   for (let i = 0; i < rewardBoxes.length; i++) {
     if (playerBox.intersectsBox(rewardBoxes[i])) {
-      console.log("PICKED REWARD + 5");
+      // console.log("PICKED REWARD + 5");
       currScore += 5;
       // bonusAudio.load();
-      bonusAudio.currentTime = 0; 
+      bonusAudio.currentTime = 0;
       bonusAudio.play();
       return;
     }
@@ -573,6 +591,9 @@ let reset = () => {
     "curr-score"
   ).innerHTML = `Curr score : <span> ${0} </span>`;
 
+  document.getElementById(
+    "level-container"
+  ).innerHTML = `<h1> Level -</h1>`;
   startCheckingCollisions = false;
   bgAudio.pause();
   playerTargetX = 0;
@@ -612,6 +633,10 @@ let animate = () => {
   playGround1.position.z += deltaTime * levelSpeed;
   playGround2.position.z += deltaTime * levelSpeed;
   playGround3.position.z += deltaTime * levelSpeed;
+
+  animateRewards(playGround1);
+  animateRewards(playGround2);
+  animateRewards(playGround3);
 
   // particles.rotation.z += 0.005;
   particles.rotation.x -= 0.005;
