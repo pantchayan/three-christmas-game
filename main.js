@@ -15,8 +15,17 @@ let trunkBoxes = [];
 let currScore = 0;
 let levelSpeed = 20;
 let sleighModel;
+let startCheckingCollisions = false;
 
 const sizes = { height: window.innerHeight, width: window.innerWidth };
+
+const bgAudio = document.getElementById("bgAudio");
+const crashAudio = document.getElementById("crashAudio");
+const jumpAudio = document.getElementById("jumpAudio");
+const bonusAudio = document.getElementById("bonusAudio");
+
+const startButton = document.querySelector(".menu-container h2");
+const menu = document.querySelector(".menu-container");
 
 const canvas = document.querySelector("canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: false });
@@ -209,6 +218,57 @@ let makeParticles = () => {
   return bgParticles;
 };
 
+let makeBgMountains = () => {
+  let mountainGeometry = new THREE.IcosahedronGeometry(70, 0);
+  let mountainMaterial = new THREE.MeshStandardMaterial({
+    color: "grey",
+    flatShading: true,
+  });
+
+  let mountain1 = new THREE.Mesh(mountainGeometry, mountainMaterial);
+  mountain1.position.z = -100;
+
+  mountain1.position.y = -40;
+  mountain1.position.x = -100;
+  let mountain2 = new THREE.Mesh(mountainGeometry, mountainMaterial);
+  mountain2.position.z = -120;
+
+  mountain2.position.y = 0;
+  mountain2.position.x = 0;
+
+  let mountain3 = new THREE.Mesh(mountainGeometry, mountainMaterial);
+  mountain3.position.z = -100;
+
+  mountain3.position.y = -20;
+  mountain3.position.x = 100;
+
+  mountain1.rotation.x = Math.random() * Math.PI;
+  mountain2.rotation.y = Math.random() * Math.PI;
+  mountain3.rotation.z = Math.random() * Math.PI;
+
+  let mountains = new THREE.Group();
+  mountains.add(mountain1, mountain2, mountain3);
+  return mountains;
+};
+
+let makeMoon = () => {
+  let moon = new THREE.Mesh(
+    new THREE.SphereGeometry(2, 30, 30),
+    new THREE.MeshStandardMaterial({ color: "white", flatShading: true })
+  );
+
+  moon.position.x = -23;
+  moon.position.y = 17;
+  moon.position.z = 0;
+  return moon;
+};
+
+let moon = makeMoon();
+scene.add(moon);
+
+let mountains = makeBgMountains();
+scene.add(mountains);
+
 let particles = makeParticles();
 particles.position.z = 51;
 scene.add(particles);
@@ -278,10 +338,10 @@ directionalLight.position.z = 7;
 directionalLight.position.y = 4;
 // scene.add(directionalLight);
 
-const pointLight = new THREE.PointLight(new THREE.Color("white"), 0.5);
+const pointLight = new THREE.PointLight(new THREE.Color("white"), 0.7);
 pointLight.position.z = 48;
 scene.add(pointLight);
-const pointLight2 = new THREE.PointLight(new THREE.Color("white"), 1.5);
+const pointLight2 = new THREE.PointLight(new THREE.Color("white"), 1);
 pointLight2.position.z = 50;
 pointLight2.position.y = -0.5;
 scene.add(pointLight2);
@@ -326,6 +386,7 @@ let handlePlayer = () => {
       player.position.y = -0.5;
       bounceValue = Math.random() * 0.04 + 0.005;
       playerJump = false;
+      jumpAudio.load();
     } else {
       player.position.y += bounceValue;
     }
@@ -336,6 +397,22 @@ let handlePlayer = () => {
     //   bounceValue -= gravity;
     // player.position.y = Math.abs(Math.sin(clock.getElapsedTime()))/4 - 0.4
   }
+};
+
+let updateMaxScore = () => {
+  currScore = Math.ceil(currScore);
+  let myStorage = window.localStorage;
+  let maxScore = { score: 0 };
+  if (myStorage.getItem("sleigh-runner") != null) {
+    maxScore = JSON.parse(myStorage.getItem("sleigh-runner"));
+    if (currScore > maxScore.score) {
+      maxScore.score = currScore;
+    }
+  }
+  console.log("Max score : " + maxScore.score);
+  myStorage.setItem("sleigh-runner", JSON.stringify(maxScore));
+  let maxS = document.getElementById("max-score");
+  maxS.innerHTML = `Max score : <span> ${maxScore.score} </span>`;
 };
 
 let updateBoxes = () => {
@@ -360,7 +437,11 @@ let checkCollision = () => {
   for (let i = 0; i < 30; i++) {
     if (playerBox.intersectsBox(trunkBoxes[i])) {
       console.log("COLLISION");
-      alert("GAME OVER!  Score : " + Math.ceil(currScore));
+      bgAudio.load();
+      crashAudio.play();
+
+      updateMaxScore();
+      console.log("GAME OVER!  Score : " + Math.ceil(currScore));
 
       currScore = 0;
       reset();
@@ -369,6 +450,13 @@ let checkCollision = () => {
 };
 
 let reset = () => {
+  menu.classList.remove("hide");
+  document.getElementById(
+    "curr-score"
+  ).innerHTML = `Curr score : <span> ${0} </span>`;
+
+  startCheckingCollisions = false;
+  bgAudio.pause();
   playerTargetX = 0;
   playerJump = false;
   bounceValue = 0.1;
@@ -379,9 +467,10 @@ let reset = () => {
   playGround2.position.z = -110;
 };
 
-// const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
 let clock = new THREE.Clock();
 let prevTime = 0;
+let animationRequest;
 let animate = () => {
   let elapsedTime = clock.getElapsedTime();
   let deltaTime = elapsedTime - prevTime;
@@ -404,13 +493,18 @@ let animate = () => {
 
   // particles.rotation.z += 0.005;
   particles.rotation.x -= 0.005;
-  currScore += 0.05;
   updateBoxes();
-  checkCollision();
+  if (startCheckingCollisions) {
+    currScore += 0.05;
+    checkCollision();
+    document.getElementById(
+      "curr-score"
+    ).innerHTML = `Curr score : <span> ${Math.ceil(currScore)} </span>`;
+  }
 
-  // controls.update();
+  controls.update();
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+  animationRequest = requestAnimationFrame(animate);
 };
 
 let handleKeyDown = (keyEvent) => {
@@ -426,6 +520,7 @@ let handleKeyDown = (keyEvent) => {
     if (keyEvent.keyCode === 38) {
       if (player.position.y > -0.5) return;
       //up, jump
+      jumpAudio.play();
       playerJump = true;
       bounceValue = 0.1;
     }
@@ -448,4 +543,23 @@ playerBox.copy(player.geometry.boundingBox).applyMatrix4(player.matrixWorld);
 // scene.add(playerBoxhelper);
 
 document.onkeydown = handleKeyDown;
+// animate();
+
+// setTimeout(() => {
+//   bgAudio.play()
+// }, 1000)
+
+bgAudio.loop = true;
+
+startButton.addEventListener("click", (e) => {
+  bgAudio.play();
+  menu.classList.add("hide");
+  currScore = 0;
+  setTimeout(() => {
+    startCheckingCollisions = true;
+  }, 2000);
+});
+
+updateMaxScore();
 animate();
+// scene.fog = new THREE.Fog(new THREE.Color('grey'), 0.00, 70);
