@@ -455,7 +455,7 @@ let regenerateGround = () => {
   }
 };
 
-let handlePlayer = () => {
+let handlePlayer = (deltaTime) => {
   // console.log(playerTargetX, player.position.x);
   if (playerTargetX > player.position.x + 0.02) {
     player.position.x += 0.02;
@@ -476,12 +476,18 @@ let handlePlayer = () => {
     // }
 
     if (player.position.y < -0.5) {
+      console.log(player.position.y)
       player.position.y = -0.5;
       bounceValue = Math.random() * 0.04 + 0.005;
       playerJump = false;
       jumpAudio.load();
     } else {
-      player.position.y += bounceValue;
+      // console.log(deltaTime)
+      let temp = player.position.y + bounceValue * deltaTime * 70;
+      if(temp < -0.5){
+        temp = -0.51;
+      }
+      player.position.y = temp;
     }
     bounceValue -= gravity;
   } else {
@@ -629,7 +635,7 @@ let animate = () => {
   }
 
   regenerateGround();
-  handlePlayer();
+  handlePlayer(deltaTime);
   playGround1.position.z += deltaTime * levelSpeed;
   playGround2.position.z += deltaTime * levelSpeed;
   playGround3.position.z += deltaTime * levelSpeed;
