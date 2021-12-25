@@ -487,7 +487,7 @@ let handlePlayer = (deltaTime) => {
       if(temp < -0.5){
         temp = -0.51;
       }
-      player.position.y = temp;
+      player.position.y += bounceValue;
     }
     bounceValue -= gravity;
   } else {
