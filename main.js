@@ -5,7 +5,7 @@
 
 // import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.min.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/loaders/GLTFLoader.js";
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
+// import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 
 let playerTargetX = 0;
 let playerJump = false;
@@ -28,7 +28,7 @@ const crashAudio = document.getElementById("crashAudio");
 const jumpAudio = document.getElementById("jumpAudio");
 const bonusAudio = document.getElementById("bonusAudio");
 
-const startButton = document.querySelector(".menu-container h2");
+const startButton = document.querySelector(".menu-container");
 const menu = document.querySelector(".menu-container");
 
 const canvas = document.querySelector("canvas");
@@ -44,6 +44,26 @@ window.addEventListener("resize", () => {
 
   renderer.setSize(sizes.width, sizes.height);
 });
+
+function isMobileDevice() {
+  // Check if the user agent indicates a mobile device
+  return /Mobi|Android/i.test(navigator.userAgent);
+}
+
+function isDesktopDevice() {
+  // Check if the screen width is greater than a certain threshold (e.g., 768px)
+  return window.innerWidth > 768 && !isMobileDevice();
+}
+
+// Example usage
+if (isMobileDevice()) {
+  document.querySelector(
+    ".menu-container"
+  ).innerHTML = `<h1>Welcome to Sleigh Runner!</h1>
+  <h2>Tap Here <br>To Start</h2>
+  <h3>Swipe Left > , Right < and Up ^ to avoid the Trunks <br> <br>Collect
+          Rewards for Extra Points</h3>`;
+}
 
 // Scene
 const scene = new THREE.Scene();
@@ -394,15 +414,38 @@ let makePlayer = () => {
 let player = makePlayer();
 scene.add(player);
 
+let fov = 55;
+
+if (isMobileDevice()) {
+  fov = 60;
+}
+
 // Camera
 const camera = new THREE.PerspectiveCamera(
-  55,
+  fov,
   sizes.width / sizes.height,
   0.1,
-  500
+  150
 );
 camera.position.z = 50.5;
 camera.position.y = 0.2;
+
+if (isMobileDevice()) {
+  camera.position.z = 52.25;
+}
+
+// Camera Top -> Overhead Camera
+let cameraTop = new THREE.PerspectiveCamera(
+  90,
+  sizes.width / sizes.height,
+  0.01,
+  500
+);
+cameraTop.position.set(0, 10, 0);
+cameraTop.lookAt(0, 0, -10);
+cameraTop.name = "OverheadCam";
+
+camera.add(cameraTop);
 
 // Lights
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -458,9 +501,9 @@ let regenerateGround = () => {
 let handlePlayer = (deltaTime) => {
   // console.log(playerTargetX, player.position.x);
   if (playerTargetX > player.position.x + 0.02) {
-    player.position.x += 0.02;
+    player.position.x += 0.02 * 1;
   } else if (playerTargetX < player.position.x - 0.02) {
-    player.position.x -= 0.02;
+    player.position.x -= 0.02 * 1;
   }
 
   if (playerJump === true) {
@@ -476,7 +519,7 @@ let handlePlayer = (deltaTime) => {
     // }
 
     if (player.position.y < -0.5) {
-      console.log(player.position.y)
+      console.log(player.position.y);
       player.position.y = -0.5;
       bounceValue = Math.random() * 0.04 + 0.005;
       playerJump = false;
@@ -484,7 +527,7 @@ let handlePlayer = (deltaTime) => {
     } else {
       // console.log(deltaTime)
       let temp = player.position.y + bounceValue * deltaTime * 70;
-      if(temp < -0.5){
+      if (temp < -0.5) {
         temp = -0.51;
       }
       player.position.y += bounceValue;
@@ -597,9 +640,7 @@ let reset = () => {
     "curr-score"
   ).innerHTML = `Curr score : <span> ${0} </span>`;
 
-  document.getElementById(
-    "level-container"
-  ).innerHTML = `<h1> Level -</h1>`;
+  document.getElementById("level-container").innerHTML = `<h1> Level -</h1>`;
   startCheckingCollisions = false;
   bgAudio.pause();
   playerTargetX = 0;
@@ -680,6 +721,26 @@ let handleKeyDown = (keyEvent) => {
   }
 };
 
+let handleSwipe = (swipe) => {
+  if (swipe === "left") {
+    //left
+    // console.log("move left");
+    if (playerTargetX > -1) playerTargetX -= 1;
+  } else if (swipe === "right") {
+    //right
+    // console.log("move right");
+    if (playerTargetX < 1) playerTargetX += 1;
+  } else {
+    if (swipe === "up") {
+      if (player.position.y > -0.5) return;
+      //up, jump
+      jumpAudio.play();
+      playerJump = true;
+      bounceValue = 0.1;
+    }
+  }
+};
+
 const playerBox = new THREE.Box3();
 const playerBoxhelper = new THREE.Box3Helper(playerBox, 0xffff00);
 
@@ -726,3 +787,72 @@ updateMaxScore();
 animate();
 
 // scene.fog = new THREE.Fog(new THREE.Color('grey'), 0.00, 70);
+
+// THIS CODE HANDLES SWIPE GESTURES ================================
+document.addEventListener("touchstart", handleTouchStart, false);
+document.addEventListener("touchmove", handleTouchMove, false);
+
+var xDown = null;
+var yDown = null;
+
+function handleTouchStart(event) {
+  xDown = event.touches[0].clientX;
+  yDown = event.touches[0].clientY;
+}
+
+function handleTouchMove(event) {
+  if (!xDown || !yDown) {
+    return;
+  }
+
+  var xUp = event.touches[0].clientX;
+  var yUp = event.touches[0].clientY;
+  var xDiff = xDown - xUp;
+  var yDiff = yDown - yUp;
+
+  if (Math.abs(xDiff) > Math.abs(yDiff)) {
+    // Horizontal swipe
+    if (xDiff > 0) {
+      // Left swipe
+      leftSwipeDetected();
+    } else {
+      // Right swipe
+      rightSwipeDetected();
+    }
+  } else {
+    // Vertical swipe
+    if (yDiff > 0) {
+      // Up swipe
+      upSwipeDetected();
+    } else {
+      // Down swipe
+      downSwipeDetected();
+    }
+  }
+
+  // Reset touch start coordinates
+  xDown = null;
+  yDown = null;
+}
+
+function leftSwipeDetected() {
+  // Trigger function for left swipe with parameter
+
+  // alert('handleswipe left called');
+  handleSwipe("left");
+}
+
+function rightSwipeDetected() {
+  // Trigger function for right swipe with parameter
+  handleSwipe("right");
+}
+
+function upSwipeDetected() {
+  // Trigger function for up swipe with parameter
+  handleSwipe("up");
+}
+
+function downSwipeDetected() {
+  // Trigger function for down swipe with parameter
+  handleSwipe("down");
+}
